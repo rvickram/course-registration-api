@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const CourseSchema = mongoose.Schema({
-    catalog_nbr : String,
+    catalog_nbr: mongoose.Schema.Types.Mixed,
     subject : String,
     className : String,
     courseInfo : [{

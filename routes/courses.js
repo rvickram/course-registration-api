@@ -1,4 +1,5 @@
 "use strict";
+const e = require('express');
 const express = require('express');
 const router = express.Router();
 
@@ -32,7 +33,11 @@ router.get('/subjects', async (req, res) => {
 // get all course codes given subject code
 router.get('/subjects/:courseId', async (req, res) => {
     // covert param to uppercase (sincee all codes are uppercase)
-    const courseIdClean = req.params.courseId.toUpperCase();
+    var cleanCourseCode = req.params.courseId
+
+    if (!isNaN(cleanCourseCode)) {
+        cleanCourseCode = parseInt(cleanCourseCode);
+    }
     
     try {
         const courseCodeList = await Course.find( { subject: req.params.courseId }, 'catalog_nbr -_id')
@@ -42,7 +47,7 @@ router.get('/subjects/:courseId', async (req, res) => {
             res.json(courseCodeList);
         }
         else {
-            res.status(404).json({error: `Could not find the course code '${req.params.courseId}'.`});
+            res.status(404).json({error: `No courses found for subject: '${req.params.courseId}'.`});
         }
     } catch (err) {
         res.status(500).json(err);
@@ -61,6 +66,12 @@ router.get('/classes', async (req, res) => {
 
 // get timetable data
 router.get('/timetable', async (req, res) => {
+    var cleanCourseCode = req.query.catalog_nbr;
+
+    if (!isNaN(cleanCourseCode)) {
+        cleanCourseCode = parseInt(cleanCourseCode);
+    }
+
     try {
         // get specific timetable rows matching input
         var timeTableData = undefined;
@@ -68,14 +79,14 @@ router.get('/timetable', async (req, res) => {
             // if the course component was NOT specified:
             timeTableData = await Course.find({
                 subject: req.query.subject,
-                catalog_nbr: req.query.catalog_nbr
+                catalog_nbr: cleanCourseCode
             }, '-_id subject catalog_nbr className course_info');
         }
         else {
             // if the course component was specified:
             timeTableData = await Course.find({
                 subject: req.query.subject,
-                catalog_nbr: req.query.catalog_nbr,
+                catalog_nbr: cleanCourseCode,
                 'course_info.ssr_component': req.query.ssr_component
             }, '-_id subject catalog_nbr className course_info');
         }
@@ -109,5 +120,18 @@ router.post('/', async (req, res) => {
         res.status(505).json(err);
     }
 })
+
+async function sanitize(string) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        "/": '&#x2F;',
+    };
+    const reg = /[&<>"'/]/ig;
+    return string.replace(reg, (match)=>(map[match]));
+}
 
 module.exports = router;
