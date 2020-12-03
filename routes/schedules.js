@@ -4,7 +4,6 @@ const router = express.Router();
 router.use(express.json());
 
 var firebase = require('firebase-admin');
-// import { NextFunction, Request, Response } from 'express';
 
 var serviceAccount = require("../course-registration-site-firebase-adminsdk-k7obh-7a2ba905b4.json");
 firebase.initializeApp({
