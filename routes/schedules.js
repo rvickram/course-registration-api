@@ -107,9 +107,19 @@ router.put('/users', checkIfAuthenticated, async (req, res) => {
     }
 });
 
-router.delete('/users', checkIfAuthenticated, async (req, res) => {
+router.delete('/users/:schedName', checkIfAuthenticated, async (req, res) => {
   try {
-    
+    const response = await firebase.database().ref(`user/${req.authId}`)
+      .child(req.params.schedName).once('value');
+
+    if (response.val().publicVis) {
+      const pubResponse = await firebase.database().ref('public')
+        .child(req.params.schedName).remove();
+    }
+
+    response.ref.remove();
+
+    res.send(response);
   } catch(e) {
     res.status(500).send('Could not delete schedule.');
   }
@@ -129,11 +139,10 @@ router.get('/public', async(req, res) => { //TODO fix this
   }
 });
 
-router.delete('/public', checkIfAdmin, async (req, res) => {
+router.delete('/public', checkIfAuthenticated, async (req, res) => {
   try {
-    const response = await firebase.database().ref('public').once('value');
+    const response = await firebase.database().ref('public').remove()
 
-    response.delete();
 
     res.send(response);
   } catch(e) {
