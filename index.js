@@ -9,14 +9,14 @@ require('dotenv').config(); //environmentvar to store db credentials
 
 // import modules
 const coursesRoutes = require('./routes/courses');
-// const schedRoutes = require('./routes/schedule');
+const schedRoutes = require('./routes/schedules');
 
 // static homepage:
 app.use('/', express.static('static'));
 
 // ROUTES
 app.use('/api/courses', coursesRoutes);
-// app.use('/api/schedule', schedRoutes);
+app.use('/api/schedules', schedRoutes);
 
 // Connect to DB
 mongoose.connect(process.env.MONGODB_URI, 
