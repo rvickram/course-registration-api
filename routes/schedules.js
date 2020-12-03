@@ -47,6 +47,9 @@ const checkIfAdmin = (req, res, next) => {
         req.displayName = userInfo.name;
         return next();
       }
+      else {
+        return res.status(401).send({ error: 'You are not authorized to make this request' });  
+      }
     } catch (e) {
       return res.status(401).send({ error: 'You are not authorized to make this request' });
     }
@@ -55,61 +58,86 @@ const checkIfAdmin = (req, res, next) => {
 
 /****** Routes ******/
 
-router.put('/users/:scheduleName', checkIfAuthenticated, async (req, res) => {
+/**
+ * Add or update a schedule
+ */
+router.put('/users', checkIfAuthenticated, async (req, res) => {
     try {
       const isPublic = req.body.publicVis;
-      
-      // JSON.parse(req.body)
-        console.log(req.body);
-        const response = await firebase.database().ref(`user/${req.authId}`).child(req.body.title).set({
-            title: req.body.title,
-            description: req.body.description,
-            courses: req.body.courses,
-            lastEdited: req.body.lastEdited,
-            publicVis: isPublic
-        });
 
-        // now try to add to public schedules list
-        if (isPublic) {
-          // check for existing public schedule with that name - if exists, only
-          // allow the same user to update
-          const existing = await firebase.database().ref('public')
-            .child(req.body.title).once('value');
+      const response = await firebase.database().ref(`user/${req.authId}`).child(req.body.title).set({
+          title: req.body.title,
+          description: req.body.description,
+          courses: req.body.courses,
+          lastEdited: req.body.lastEdited,
+          publicVis: isPublic
+      });
 
-          // schedule with this title exists, is NOT from same user
-          if (existing.val() && existing.val().displayName !== req.displayName) {
-            res.status(500).send(JSON.stringify('A publicly posted schedule with this name already' +
-            ' exists! Your schedule was still saved privately.'));
-          }
-          // overwrite or create new schedule
-          else {
-            const pubResponse = await firebase.database().ref('public')
-              .child(req.body.title).set({
-                title: req.body.title,
-                description: req.body.description,
-                courses: req.body.courses,
-                lastEdited: req.body.lastEdited,
-                displayName: req.displayName
-              });
+      // now try to add to public schedules list
+      if (isPublic) {
+        // check for existing public schedule with that name - if exists, only
+        // allow the same user to update
+        const existing = await firebase.database().ref('public')
+          .child(req.body.title).once('value');
 
-              res.send(pubResponse);
-          }
+        // schedule with this title exists, is NOT from same user
+        if (existing.val() && existing.val().displayName !== req.displayName) {
+          res.status(500).send(JSON.stringify('A publicly posted schedule with this name already' +
+          ' exists! Your schedule was still saved privately.'));
         }
+        // overwrite existing
         else {
-          res.send(JSON.stringify(`Saved schedule \'${req.body.title}\'`));
+          const pubResponse = await firebase.database().ref('public')
+            .child(req.body.title).set({
+              title: req.body.title,
+              description: req.body.description,
+              courses: req.body.courses,
+              lastEdited: req.body.lastEdited,
+              displayName: req.displayName
+            });
+
+            res.send(pubResponse);
         }
+      }
+      else {
+        res.send(JSON.stringify(`Saved schedule \'${req.body.title}\'`));
+      }
     } catch(e) {
         res.status(500).send(e.message);
     }
 });
 
-router.get('/public', async(req, res) => {
+router.delete('/users', checkIfAuthenticated, async (req, res) => {
+  try {
+    
+  } catch(e) {
+    res.status(500).send('Could not delete schedule.');
+  }
+});
+
+/**
+ * Get all publicly posted schedules
+ */
+router.get('/public', async(req, res) => { //TODO fix this
   try {
     // get public schedules list
+    const response = await firebase.database().ref('public').once('value');
 
-    const response = await firebase.database().ref('public')
+    res.send(response);
   } catch(e) {
     res.status(500).send(e.message);
+  }
+});
+
+router.delete('/public', checkIfAdmin, async (req, res) => {
+  try {
+    const response = await firebase.database().ref('public').once('value');
+
+    response.delete();
+
+    res.send(response);
+  } catch(e) {
+    res.status(500).send('Could not delete.');
   }
 });
 
