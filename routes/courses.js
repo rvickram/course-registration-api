@@ -1,5 +1,4 @@
 "use strict";
-const e = require('express');
 const express = require('express');
 const router = express.Router();
 
@@ -10,7 +9,6 @@ router.use(express.json());
 
 // get all courses
 router.get('/', async (req, res) => {
-    console.log('got request');
     try {
         const courseList = await Course.find({}, "-_id subject className").limit(10);
 

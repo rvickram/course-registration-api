@@ -11,17 +11,15 @@ require('dotenv').config(); //environmentvar to store db credentials
 const coursesRoutes = require('./routes/courses');
 const schedRoutes = require('./routes/schedules');
 
-// static homepage:
-app.use('/', express.static('static'));
-
 // ROUTES
 app.use('/api/courses', coursesRoutes);
 app.use('/api/schedules', schedRoutes);
 
-// Connect to DB
+// Connect to Mongo
 mongoose.connect(process.env.MONGODB_URI, 
     { useNewUrlParser: true , useUnifiedTopology: true , useFindAndModify: false},
-    () => console.log('Connected to DB!')); 
+    () => console.log('Connected to DB!')
+);
 
 // Listen at port
 app.listen(3000, () => console.log('Now listening on port 3000...'));
