@@ -114,6 +114,17 @@ router.put('/users', checkIfAuthenticated, async (req, res) => {
     }
 });
 
+router.get('/users', checkIfAuthenticated, async (req, res) => {
+  try {
+    const response = await firebase.database().ref(`user/${req.authId}`)
+      .once('value');
+
+    res.send(response);
+  } catch(e) {
+    res.status(500).send(e.message);
+  }
+});
+
 router.delete('/users/:schedName', checkIfAuthenticated, async (req, res) => {
   try {
     const response = await firebase.database().ref(`user/${req.authId}`)
