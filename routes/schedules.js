@@ -100,6 +100,13 @@ router.put('/users', checkIfAuthenticated, async (req, res) => {
         }
       }
       else {
+        // check for existing public schedule, remove it if now private
+        const pubResponse = await firebase.database().ref('public')
+          .child(req.body.title).once('value');
+        if (pubResponse.val()) {
+          pubResponse.ref.remove();
+        }
+
         res.send(JSON.stringify(`Saved schedule \'${req.body.title}\'`));
       }
     } catch(e) {
