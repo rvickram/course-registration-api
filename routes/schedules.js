@@ -16,7 +16,6 @@ firebase.initializeApp({
 
 /****** Authentication ******/
 const getAuthToken = (req, res, next) => {
-    console.log(req.headers.authorization);
     if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
         req.authToken = req.headers.authorization.split(' ')[1];
     } else {
@@ -29,7 +28,7 @@ const checkIfAuthenticated = (req, res, next) => {
   getAuthToken(req, res, async () => {
     try {
       const { authToken } = req;
-      const userInfo = await (await firebase.auth().verifyIdToken(authToken)).uid;
+      const userInfo = await firebase.auth().verifyIdToken(authToken);
       req.authId = userInfo.uid;
       return next();
     } catch (e) {
@@ -54,11 +53,19 @@ const checkIfAdmin = (req, res, next) => {
 
 /****** Routes ******/
 
-router.put('/users/:scheduleName', checkIfAuthenticated, (req, res) => {
-    firebase.database().ref(`user/${req.authId}`).child(req.body.title).set({
-        title: req.body.title,
-        description: req.body.description
-    })
+router.put('/users/:scheduleName', checkIfAuthenticated, async (req, res) => {
+    try {
+        // JSON.parse(req.body)
+        console.log(req.body);
+        const response = await firebase.database().ref(`user/${req.authId}`).child(req.body.title).set({
+            title: req.body.title,
+            description: req.body.description
+        });
+
+        res.send(response);
+    } catch(e) {
+        res.status(500).send(e.message);
+    }
 });
 
 module.exports = router;
