@@ -76,8 +76,8 @@ router.post('/users', checkIfAuthenticated, async (req, res) => {
 
       if (existing.val() && existing.val().displayName !== req.displayName) {
         res.status(500).send('There is already a publicly posted schedule with this name!');
+        return;
       }
-      return;
     }
 
 
