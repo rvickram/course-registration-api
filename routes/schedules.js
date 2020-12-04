@@ -57,8 +57,58 @@ const checkIfAdmin = (req, res, next) => {
 
 /****** Routes ******/
 
+router.post('/users', checkIfAuthenticated, async (req, res) => {
+  try {
+    const isPublic = req.body.publicVis;
+
+    // check if user has a schedule with this name
+    var existing = await firebase.database().ref(`user/${req.authId}`)
+      .child(req.body.title).once('value');
+    if (existing.val()) {
+      res.status(500).send('You already have a schedule with this name!');
+      return;
+    }
+
+    // check if there is a publicly posted schedule with this name
+    if (isPublic) {
+      existing = await firebase.database().ref('public')
+        .child(req.body.title).once('value');
+
+      if (existing.val() && existing.val().displayName !== req.displayName) {
+        res.status(500).send('There is already a publicly posted schedule with this name!');
+      }
+      return;
+    }
+
+
+    const response = await firebase.database().ref(`user/${req.authId}`).child(req.body.title).set({
+        title: req.body.title,
+        description: req.body.description,
+        courses: req.body.courses,
+        lastEdited: req.body.lastEdited,
+        publicVis: isPublic
+    });
+
+    // now add to public schedules list
+    if (isPublic) {
+      const pubResponse = await firebase.database().ref('public')
+        .child(req.body.title).set({
+          title: req.body.title,
+          description: req.body.description,
+          courses: req.body.courses,
+          lastEdited: req.body.lastEdited,
+          displayName: req.displayName
+      });
+    }
+
+    res.send(JSON.stringify(`Saved schedule \'${req.body.title}\'`));
+  } catch(e) {
+      res.status(500).send(e.message);
+  }
+});
+
 /**
- * Add or update a schedule
+ * Update a schedule
  */
 router.put('/users', checkIfAuthenticated, async (req, res) => {
     try {
